@@ -16,13 +16,13 @@
 	};
 	
 	customBinder = function(passThrough) {
-		return function(type, data, fn) {
+		return function(type, data, fn, origSelector) {
 			handler = ( $.isFunction( data ) || data === false ) ? data : fn;
 			_handler = generateEventHandler(this, handler);
 			if (handler === data) {
-				passThrough.call(this, type, _handler);
+				passThrough.call(this, type, _handler, undefined, origSelector);
 			} else {
-				passThrough.call(this, type, data, _handler);
+				passThrough.call(this, type, data, _handler, origSelector);
 			}
 			if (handler !== false) handler.guid = _handler.guid;
 			return this;

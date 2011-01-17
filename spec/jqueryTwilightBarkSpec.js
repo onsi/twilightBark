@@ -27,7 +27,7 @@ describe("jQueryErrorReporter", function() {
 		});		
 	});
 	
-	describe('events', function() {
+	describe('simple binding events', function() {
 		var div;
 		beforeEach(function() {
 			div = $('<div>');
@@ -271,97 +271,203 @@ describe("jQueryErrorReporter", function() {
 		});
 	});
 	
-	describe('live/die', function() {
-		var addDiv = function(classString) {
-			var div = $('<div>', {'class': classString || ''});
-			$('body').append(div);			
-			return div;
-		}
-		afterEach(function() {
-			$('div').die();
+	describe('persistent live/delegate events', function() {
+    	describe('live/die', function() {
+    		var addDiv = function(classString) {
+    			var div = $('<div>', {'class': classString || ''});
+    			$('body').append(div);			
+    			return div;
+    		}
+    		afterEach(function() {
+    			$('div').die();
+    		});
+    		describe("when there is no data passed in", function() {
+    			it('fires when event handlers blow up', function() {
+    				var div;
+    				$('div').live('click', theFail);
+    				div = addDiv();
+    				expectTheHandlerIsCalledWhen(function() {
+    					div.click();
+    				});
+    				div.remove();
+    			});
+    			it('does not interfere with die', function() {
+    				var div;
+    				$('div').live('click', theFail);
+    				div = addDiv();
+    				expectTheHandlerIsCalledWhen(function() {
+    					div.click();
+    				});
+    				$('div').die('click', theFail);
+    				expectTheHandlerIsNotCalledWhen(function() {
+    					div.click();
+    				});	
+    				div = addDiv();
+    				expectTheHandlerIsNotCalledWhen(function() {
+    					div.click();
+    				});								
+    			});
+    			describe("not altering live's default behavior", function() {
+    				it("passes the correct event object", function() {
+    					func = function(e) {
+    						expect(e.type).toEqual('click');
+    					}
+    					$('div').live('click', func);
+    					div = addDiv();
+    					div.click();
+    					div.remove();
+    				});
+    				it("does not interfere with the event handler's context", function() {
+    					func = function(e) {
+    						expect(this).toEqual(div[0]);
+    					}
+    					var div;
+    					$('div').live('click', func);
+    					div = addDiv();
+    					div.click();
+    					div.remove();
+    				});
+    			});
+    		});
+    		describe("when data is passed in", function() {
+    			it('fires when event handlers blow up', function() {
+    				var div;
+    				$('div').live('click', {my: 'data'}, theFail);
+    				div = addDiv();
+    				expectTheHandlerIsCalledWhen(function() {
+    					div.click();
+    				});
+    				div.remove();
+    			});
+    			it('does not interfere with the data passing functionality', function() {
+    				var div;
+    				var func = jasmine.createSpy();
+    				$('div').live('click', {my: 'data'}, func);
+    				div = addDiv();
+    				div.click();
+    				expect(func).toHaveBeenCalled();
+    				expect(func.mostRecentCall.args[0].data).toEqual({my: 'data'});
+    				div.remove();
+    			});
+    			it('does not interfere with die', function() {
+    				var div;
+    				$('div').live('click', {my: 'data'}, theFail);
+    				div = addDiv();
+    				expectTheHandlerIsCalledWhen(function() {
+    					div.click();
+    				});
+    				$('div').die('click', theFail);
+    				expectTheHandlerIsNotCalledWhen(function() {
+    					div.click();
+    				});
+    				div.remove();
+    			});
+    		});
 		});
-		describe("when there is no data passed in", function() {
-			it('fires when event handlers blow up', function() {
-				var div;
-				$('div').live('click', theFail);
-				div = addDiv();
-				expectTheHandlerIsCalledWhen(function() {
-					div.click();
-				});
-				div.remove();
-			});
-			it('does not interfere with die', function() {
-				var div;
-				$('div').live('click', theFail);
-				div = addDiv();
-				expectTheHandlerIsCalledWhen(function() {
-					div.click();
-				});
-				$('div').die('click', theFail);
-				expectTheHandlerIsNotCalledWhen(function() {
-					div.click();
-				});	
-				div = addDiv();
-				expectTheHandlerIsNotCalledWhen(function() {
-					div.click();
-				});								
-			});
-			describe("not altering live's default behavior", function() {
-				it("passes the correct event object", function() {
-					func = function(e) {
-						expect(e.type).toEqual('click');
-					}
-					$('div').live('click', func);
-					div = addDiv();
-					div.click();
-					div.remove();
-				});
-				it("does not interfere with the event handler's context", function() {
-					func = function(e) {
-						expect(this).toEqual(div[0]);
-					}
-					var div;
-					$('div').live('click', func);
-					div = addDiv();
-					div.click();
-					div.remove();
-				});
-			});
-		});
-		describe("when data is passed in", function() {
-			it('fires when event handlers blow up', function() {
-				var div;
-				$('div').live('click', {my: 'data'}, theFail);
-				div = addDiv();
-				expectTheHandlerIsCalledWhen(function() {
-					div.click();
-				});
-				div.remove();
-			});
-			it('does not interfere with the data passing functionality', function() {
-				var div;
-				var func = jasmine.createSpy();
-				$('div').live('click', {my: 'data'}, func);
-				div = addDiv();
-				div.click();
-				expect(func).toHaveBeenCalled();
-				expect(func.mostRecentCall.args[0].data).toEqual({my: 'data'});
-				div.remove();
-			});
-			it('does not interfere with die', function() {
-				var div;
-				$('div').live('click', {my: 'data'}, theFail);
-				div = addDiv();
-				expectTheHandlerIsCalledWhen(function() {
-					div.click();
-				});
-				$('div').die('click', theFail);
-				expectTheHandlerIsNotCalledWhen(function() {
-					div.click();
-				});
-				div.remove();
-			});
+		describe('delegate/undelegate', function() {
+		    var parent, child, other;
+		    beforeEach(function() {
+		        parent = $('<div>', {'class': 'parent'});
+		        child = $('<div>', {'class': 'clicker'});
+		        other = $('<div>', {'class': 'clicker'});
+		        parent.append(child);
+		        $('body').append(parent)
+		        $('body').append(other)
+		    });
+    		afterEach(function() {
+                parent.remove();
+                other.remove();
+    		});
+    		var addDiv = function(classString) {
+    			var div = $('<div>', {'class': classString || ''});
+    			$('body').append(div);			
+    			return div;
+    		}
+    		describe("when there is no data passed in", function() {
+    			it('fires when event handlers blow up', function() {
+    			    parent.delegate('div.clicker', 'click', theFail);
+    				expectTheHandlerIsCalledWhen(function() {
+    					child.click();
+    				});
+    				expectTheHandlerIsNotCalledWhen(function() {
+    					other.click();
+    				});
+    				var div = $('<div>', {'class': 'clicker'});
+                    parent.append(div);
+    				expectTheHandlerIsCalledWhen(function() {
+    					div.click();
+    				});                        
+    			});
+    			it('does not interfere with undelegate', function() {
+    			    parent.delegate('div.clicker', 'click', theFail);
+    				expectTheHandlerIsCalledWhen(function() {
+    					child.click();
+    				});
+    				parent.undelegate('div.clicker', 'click', theFail);
+    				expectTheHandlerIsNotCalledWhen(function() {
+    					child.click();
+    				});        				
+    				var div = $('<div>', {'class': 'clicker'});
+                    parent.append(div);
+    				expectTheHandlerIsNotCalledWhen(function() {
+    					div.click();
+    				});                        
+    			});
+    			describe("not altering live's default behavior", function() {
+    				it("passes the correct event object", function() {
+    					func = function(e) {
+    						expect(e.type).toEqual('click');
+    					}
+        			    parent.delegate('div.clicker', 'click', func);
+        			    child.click();
+    				});
+    				it("does not interfere with the event handler's context", function() {
+    					func = function(e) {
+    						expect(this).toEqual(child[0]);
+    					}
+        			    parent.delegate('div.clicker', 'click', func);
+        			    child.click();
+    				});
+    			});
+    		});
+    		describe("when data is passed in", function() {
+    			it('fires when event handlers blow up', function() {
+    			    parent.delegate('div.clicker', 'click', {my: 'data'}, theFail);
+    				expectTheHandlerIsCalledWhen(function() {
+    					child.click();
+    				});
+    				expectTheHandlerIsNotCalledWhen(function() {
+    					other.click();
+    				});
+    				var div = $('<div>', {'class': 'clicker'});
+                    parent.append(div);
+    				expectTheHandlerIsCalledWhen(function() {
+    					div.click();
+    				});                        
+    			});
+    			it('does not interfere with the data passing functionality', function() {
+    				var func = jasmine.createSpy();
+    			    parent.delegate('div.clicker', 'click', {my: 'data'}, func);
+    				child.click();
+    				expect(func).toHaveBeenCalled();
+    				expect(func.mostRecentCall.args[0].data).toEqual({my: 'data'});
+    			});
+    			it('does not interfere with undelegate', function() {
+    			    parent.delegate('div.clicker', 'click', {my: 'data'}, theFail);
+    				expectTheHandlerIsCalledWhen(function() {
+    					child.click();
+    				});
+    				parent.undelegate('div.clicker', 'click', theFail);
+    				expectTheHandlerIsNotCalledWhen(function() {
+    					child.click();
+    				});        				
+    				var div = $('<div>', {'class': 'clicker'});
+                    parent.append(div);
+    				expectTheHandlerIsNotCalledWhen(function() {
+    					div.click();
+    				});                        
+    			});
+    		});
 		});
 	});
-	
 });
