@@ -1,8 +1,8 @@
 (function($) {
 	var _errorHandler = $.noop;
-	var generateEventHandler, generateBindAndOne;
+	var generateEventHandler, customBinder;
 	var ready = false;
-	var jqueryReady, jqueryFnBind, jqueryFnOne;
+	var jqueryReady, jqueryFnBind, jqueryFnOne, jqueryFnLive;
 	
 	generateEventHandler = function(context, handler) {
 		if (handler === false) return false;
@@ -15,7 +15,7 @@
 		}
 	};
 	
-	bindAndOne = function(passThrough) {
+	customBinder = function(passThrough) {
 		return function(type, data, fn) {
 			handler = ( $.isFunction( data ) || data === false ) ? data : fn;
 			_handler = generateEventHandler(this, handler);
@@ -34,8 +34,10 @@
 		if (ready) return;
 		jqueryFnBind = $.fn.bind;
 		jqueryFnOne = $.fn.one;
-		$.fn.bind = bindAndOne(jqueryFnBind);
-		$.fn.one = bindAndOne(jqueryFnOne);
+		jqueryFnLive = $.fn.live;
+		$.fn.bind = customBinder(jqueryFnBind);
+		$.fn.one = customBinder(jqueryFnOne);
+		$.fn.live = customBinder(jqueryFnLive);
 		ready = true;
 	};
 })(jQuery);

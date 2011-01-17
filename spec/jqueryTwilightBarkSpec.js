@@ -270,4 +270,98 @@ describe("jQueryErrorReporter", function() {
 			});
 		});
 	});
+	
+	describe('live/die', function() {
+		var addDiv = function(classString) {
+			var div = $('<div>', {'class': classString || ''});
+			$('body').append(div);			
+			return div;
+		}
+		afterEach(function() {
+			$('div').die();
+		});
+		describe("when there is no data passed in", function() {
+			it('fires when event handlers blow up', function() {
+				var div;
+				$('div').live('click', theFail);
+				div = addDiv();
+				expectTheHandlerIsCalledWhen(function() {
+					div.click();
+				});
+				div.remove();
+			});
+			it('does not interfere with die', function() {
+				var div;
+				$('div').live('click', theFail);
+				div = addDiv();
+				expectTheHandlerIsCalledWhen(function() {
+					div.click();
+				});
+				$('div').die('click', theFail);
+				expectTheHandlerIsNotCalledWhen(function() {
+					div.click();
+				});	
+				div = addDiv();
+				expectTheHandlerIsNotCalledWhen(function() {
+					div.click();
+				});								
+			});
+			describe("not altering live's default behavior", function() {
+				it("passes the correct event object", function() {
+					func = function(e) {
+						expect(e.type).toEqual('click');
+					}
+					$('div').live('click', func);
+					div = addDiv();
+					div.click();
+					div.remove();
+				});
+				it("does not interfere with the event handler's context", function() {
+					func = function(e) {
+						expect(this).toEqual(div[0]);
+					}
+					var div;
+					$('div').live('click', func);
+					div = addDiv();
+					div.click();
+					div.remove();
+				});
+			});
+		});
+		describe("when data is passed in", function() {
+			it('fires when event handlers blow up', function() {
+				var div;
+				$('div').live('click', {my: 'data'}, theFail);
+				div = addDiv();
+				expectTheHandlerIsCalledWhen(function() {
+					div.click();
+				});
+				div.remove();
+			});
+			it('does not interfere with the data passing functionality', function() {
+				var div;
+				var func = jasmine.createSpy();
+				$('div').live('click', {my: 'data'}, func);
+				div = addDiv();
+				div.click();
+				expect(func).toHaveBeenCalled();
+				expect(func.mostRecentCall.args[0].data).toEqual({my: 'data'});
+				div.remove();
+			});
+			it('does not interfere with die', function() {
+				var div;
+				$('div').live('click', {my: 'data'}, theFail);
+				div = addDiv();
+				expectTheHandlerIsCalledWhen(function() {
+					div.click();
+				});
+				$('div').die('click', theFail);
+				expectTheHandlerIsNotCalledWhen(function() {
+					div.click();
+				});
+				div.remove();
+			});
+		});
+	});
+	
 });
