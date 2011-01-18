@@ -21,20 +21,40 @@ describe("jQueryErrorReporter", function() {
 		expect(theHandler).not.toHaveBeenCalled();
 	}
 
-	describe('overriding $.readyl', function() {
+	describe('overriding $.ready', function() {
+	    beforeEach(function() {
+	        $.twilightBark.reportErrors({handler: theHandler});
+	    });
 		it('reports errors that take place on ready', function() {
-		    beforeEach(function() {
-		        $.twilightBark.reportTo(theHandler);
-		    });
 			expectTheHandlerIsCalledWhen(function() {
 				$(document).ready(theFail);
 			});
 		});		
+		it('reports errors that take place on ready', function() {
+			expectTheHandlerIsCalledWhen(function() {
+				$().ready(theFail);
+			});
+		});		
+		it('reports errors that take place on ready', function() {
+			expectTheHandlerIsCalledWhen(function() {
+				$(theFail);
+			});
+		});
+		it('returns the correct object', function() {
+			expect($(document).ready(function() {})).toEqual($(document));
+		});
+		it ('calls the function in the document context and passes it the jQuery object', function() {
+			var func = function(a) {
+				expect(this).toEqual(document);
+				expect(a).toEqual($);
+			}
+			$(document).ready(func);
+		})
 	});
 	
 	describe('simple binding events', function() {
 	    beforeEach(function() {
-    		$.twilightBark.reportTo(theHandler);
+    		$.twilightBark.reportErrors({handler: theHandler});
     	});
 		var div;
 		beforeEach(function() {
@@ -281,7 +301,7 @@ describe("jQueryErrorReporter", function() {
 	
 	describe('persistent live/delegate events', function() {
 	    beforeEach(function() {
-    		$.twilightBark.reportTo(theHandler);
+    		$.twilightBark.reportErrors({handler: theHandler});
     	});
     	describe('live/die', function() {
     		var addDiv = function(classString) {
@@ -485,7 +505,7 @@ describe("jQueryErrorReporter", function() {
 	describe('setInterval and setTimeout', function() {
 	    describe('setting the replaceTimers boolean to true', function() {
 	        beforeEach(function() {
-	            $.twilightBark.reportTo(theHandler, {replaceTimers: true});
+	            $.twilightBark.reportErrors({handler: theHandler, replaceTimers: true});
 	            spyOn($.twilightBark, 'setTimeout');
 	            spyOn($.twilightBark, 'setInterval');
 	        });
@@ -510,7 +530,7 @@ describe("jQueryErrorReporter", function() {
 	    });
 	    describe('setting the replaceTimers boolean to false', function() {
 	        beforeEach(function() {
-	            $.twilightBark.reportTo(theHandler); //false is the default
+	            $.twilightBark.reportErrors({handler: theHandler}); //false is the default
 	            spyOn($.twilightBark, 'setTimeout');
 	            spyOn($.twilightBark, 'setInterval');
 	        });
@@ -528,7 +548,7 @@ describe("jQueryErrorReporter", function() {
 	    describe('the custom setTimeout and setInterval implementations', function() {
 	        beforeEach(function() {
 	            jasmine.Clock.useMock()
-	            $.twilightBark.reportTo(theHandler);
+	            $.twilightBark.reportErrors({handler: theHandler});
             });
             afterEach(function() {
                 jasmine.Clock.reset();
@@ -617,7 +637,7 @@ describe("jQueryErrorReporter", function() {
 	});
 	describe('Custom function wrapping with $.twilightBark.wrap', function() {
 	    beforeEach(function() {
-    		$.twilightBark.reportTo(theHandler);
+    		$.twilightBark.reportErrors({handler: theHandler});
     	});
 	    it('wraps the function and applies the supplied context', function() {
 	        expect(theFail).toThrow('Boom!')
@@ -650,6 +670,26 @@ describe("jQueryErrorReporter", function() {
 	            $.twilightBark.wrap('not a function')
 	        }).toThrow('Can only wrap functions');
 	    });
+	});
+	describe('Config options', function() {
+		describe('throwErrors', function() {
+			describe('when set to true', function() {
+				it('calls the handler and throws errors', function() {
+					$.twilightBark.reportErrors({handler: theHandler, throwErrors: true});
+					expect(theHandler).not.toHaveBeenCalled();
+					expect(function() {$(theFail)}).toThrow('Boom!');
+					expect(theHandler).toHaveBeenCalled();
+				});
+			});
+			describe('when set to false (the default value)', function() {
+				it('calls the handler but does not throw errors', function() {
+					$.twilightBark.reportErrors({handler: theHandler});
+					expect(theHandler).not.toHaveBeenCalled();
+					expect(function() {$(theFail)}).not.toThrow('Boom!');
+					expect(theHandler).toHaveBeenCalled();					
+				});
+			});
+		});
 	});
 	
 });
