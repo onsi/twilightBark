@@ -1,11 +1,13 @@
 describe("jQueryErrorReporter", function() {
 	var theHandler, theFail;
-	beforeEach(function() {
-		theHandler =jasmine.createSpy();
-		theFail = function() { throw('Boom!') };
-		jQuery.reportErrorsTo(theHandler);
+	beforeEach(function() {	    
+    	theHandler =jasmine.createSpy();
+    	theFail = function() { throw('Boom!') };
 	});
 	
+	afterEach(function() {
+	    $.cleanUpTwilightBark();
+	});
 	var expectTheHandlerIsCalledWhen = function(callback) {
 		expect(theHandler).not.toHaveBeenCalled();
 		callback();
@@ -28,6 +30,9 @@ describe("jQueryErrorReporter", function() {
 	});
 	
 	describe('simple binding events', function() {
+	    beforeEach(function() {
+    		jQuery.reportErrorsTo(theHandler);
+    	});
 		var div;
 		beforeEach(function() {
 			div = $('<div>');
@@ -272,6 +277,9 @@ describe("jQueryErrorReporter", function() {
 	});
 	
 	describe('persistent live/delegate events', function() {
+	    beforeEach(function() {
+    		jQuery.reportErrorsTo(theHandler);
+    	});
     	describe('live/die', function() {
     		var addDiv = function(classString) {
     			var div = $('<div>', {'class': classString || ''});
@@ -469,5 +477,139 @@ describe("jQueryErrorReporter", function() {
     			});
     		});
 		});
+	});
+	
+	describe('setInterval and setTimeout', function() {
+	    describe('setting the replaceTimers boolean to true', function() {
+	        beforeEach(function() {
+	            jQuery.reportErrorsTo(theHandler, {replaceTimers: true});
+	            spyOn(jQuery, 'setTimeout');
+	            spyOn(jQuery, 'setInterval');
+	        });
+	        it('overloads the browser defined setTimeout function', function() {
+	            var func = function() {};
+	            window.setTimeout(func, 100, 'param1', 'param2');
+	            expect(jQuery.setTimeout).toHaveBeenCalled();
+	            expect(jQuery.setTimeout.mostRecentCall.args[0]).toEqual(func);
+	            expect(jQuery.setTimeout.mostRecentCall.args[1]).toEqual(100);
+	            expect(jQuery.setTimeout.mostRecentCall.args[2]).toEqual('param1');
+	            expect(jQuery.setTimeout.mostRecentCall.args[3]).toEqual('param2');
+	        });
+	        it('overloads the browser defined setInterval function', function() {
+	            var func = function() {};
+	            window.setInterval(func, 100, 'param1', 'param2');
+	            expect(jQuery.setInterval).toHaveBeenCalled();
+	            expect(jQuery.setInterval.mostRecentCall.args[0]).toEqual(func);
+	            expect(jQuery.setInterval.mostRecentCall.args[1]).toEqual(100);
+	            expect(jQuery.setInterval.mostRecentCall.args[2]).toEqual('param1');
+	            expect(jQuery.setInterval.mostRecentCall.args[3]).toEqual('param2');	            
+	        });
+	    });
+	    describe('setting the replaceTimers boolean to false', function() {
+	        beforeEach(function() {
+	            jQuery.reportErrorsTo(theHandler); //false is the default
+	            spyOn(jQuery, 'setTimeout');
+	            spyOn(jQuery, 'setInterval');
+	        });
+	        it('does not overload the browser defined setTimeout function', function() {
+	            var func = function() {};
+	            window.setTimeout(func, 100, 'param1', 'param2');
+	            expect(jQuery.setTimeout).not.toHaveBeenCalled();
+	        });
+	        it('does not overload the browser defined setInterval function', function() {
+	            var func = function() {};
+	            window.setInterval(func, 100, 'param1', 'param2');
+	            expect(jQuery.setInterval).not.toHaveBeenCalled();
+	        });
+	    });
+	    describe('the custom setTimeout and setInterval implementations', function() {
+	        beforeEach(function() {
+	            jasmine.Clock.useMock()
+	            jQuery.reportErrorsTo(theHandler);
+            });
+            afterEach(function() {
+                jasmine.Clock.reset();
+            })
+            describe('setTimeout', function() {
+    	        it('catches errors', function() {
+    	            $.setTimeout(theFail, 100);
+    	            expectTheHandlerIsNotCalledWhen(function() {
+    	                jasmine.Clock.tick(99);
+    	            });
+    	            expectTheHandlerIsCalledWhen(function() {
+    	                jasmine.Clock.tick(1);
+    	            });
+    	            expectTheHandlerIsNotCalledWhen(function() {
+    	                jasmine.Clock.tick(99);
+    	            });
+    	            expectTheHandlerIsNotCalledWhen(function() {
+    	                jasmine.Clock.tick(1);
+    	            });
+    	        });
+    	        it('returns the correct timer ID', function() {
+    	            var id = $.setTimeout(theFail, 100);
+    	            expectTheHandlerIsNotCalledWhen(function() {
+    	                jasmine.Clock.tick(99);
+    	            });
+    	            clearTimeout(id);
+    	            expectTheHandlerIsNotCalledWhen(function() {
+    	                jasmine.Clock.tick(1);
+    	            });    	            
+    	        });
+    	        it('does not allow strings to be passed (no eval!)', function() {
+    	            expect(function() {$.setTimeout("execute this code please", 100)}).toThrow("Please only pass functions to setTimeout")
+    	        });
+    	        xit('passes all passed arguments and executes the handler in the global (window) context', function() {
+    	            //This is working but jasmine doesn't mock out setTimeout correctly
+    	            var func = function(a, b) {
+    	                expect(a).toEqual(17);
+    	                expect(b).toEqual({more: 'args'});
+    	                expect(this).toEqual(window);
+    	            }
+    	            $.setTimeout(func, 100, 17, {more: 'args'});
+    	            jasmine.Clock.tick(100);
+    	        });
+            });
+            describe('setInterval', function() {
+    	        it('catches errors', function() {
+    	            $.setInterval(theFail, 100);
+    	            expectTheHandlerIsNotCalledWhen(function() {
+    	                jasmine.Clock.tick(99);
+    	            });
+    	            expectTheHandlerIsCalledWhen(function() {
+    	                jasmine.Clock.tick(1);
+    	            });
+    	            expectTheHandlerIsNotCalledWhen(function() {
+    	                jasmine.Clock.tick(99);
+    	            });
+    	            expectTheHandlerIsCalledWhen(function() {
+    	                jasmine.Clock.tick(1);
+    	            });
+    	        });
+    	        it('returns the correct timer ID', function() {
+    	            var id = $.setInterval(theFail, 100);
+    	            expectTheHandlerIsNotCalledWhen(function() {
+    	                jasmine.Clock.tick(99);
+    	            });
+    	            clearTimeout(id);
+    	            expectTheHandlerIsNotCalledWhen(function() {
+    	                jasmine.Clock.tick(1);
+    	            });
+    	        });
+    	        it('does not allow strings to be passed (no eval!)', function() {
+    	            expect(function() {$.setInterval("execute this code please", 100)}).toThrow("Please only pass functions to setInterval")
+    	        });
+    	        xit('passes all passed arguments and executes the handler in the global (window) context', function() {
+    	            //This is working but jasmine doesn't mock out setInterval correctly
+    	            var func = function(a, b) {
+    	                expect(a).toEqual(17);
+    	                expect(b).toEqual({more: 'args'});
+    	                expect(this).toEqual(window);
+    	            }
+    	            $.setInterval(func, 100, 17, {more: 'args'});
+    	            jasmine.Clock.tick(100);
+    	        });
+            });
+	    });
 	});
 });
