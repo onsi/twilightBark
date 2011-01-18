@@ -9,15 +9,9 @@
 	var jqueryFnLive = $.fn.live;
     var jqueryReady;
 	
+	$.twilightBark = {};
 	
-	$.reportErrorsTo = function(errorHandler, options) {
-	    /*
-            reportErrorsTo(errorHandler, options)
-            errorHandler(e, report) is a callback that will receive the original exception raised (e) and a report object.
-            options = {
-                replaceTimers: BOOL, //If true then window.setTimeout and window.setInterval are overloaded.  If false, you must either wrap your timer callbacks or use $.setTimeout and $.setInterval to track errors.  Defaults to false
-            }
-	    */
+	$.twilightBark.reportTo = function(errorHandler, options) {
 	    options = options || {};
 		_errorHandler = $.isFunction(errorHandler) ? errorHandler : $.noop;
 		$.fn.bind = customBinder(jqueryFnBind);
@@ -25,24 +19,36 @@
 		$.fn.live = customBinder(jqueryFnLive);
 		if (options.replaceTimers) {
 		    window.setTimeout = function() {
-		        $.setTimeout.apply(window, arguments);
+		        $.twilightBark.setTimeout.apply(window, arguments);
 		    }
 		    window.setInterval = function() {
-		        $.setInterval.apply(window, arguments);
+		        $.twilightBark.setInterval.apply(window, arguments);
 		    }
 		}
 	};
 	
 	$.each(['setTimeout', 'setInterval'], function(i, name) {
-	    $[name] = function() {
+	    $.twilightBark[name] = function() {
             var args = Array.prototype.slice.call(arguments);
             if (!$.isFunction(args[0])) throw('Please only pass functions to ' + name);
-            args[0] = wrapFunction(window, args[0]);
+            args[0] = $.twilightBark.wrap(args[0]);
             return (name === 'setTimeout' ? windowSetTimeout : windowSetInterval).apply(window, args);
 	    }
 	});
 	
-	$.cleanUpTwilightBark = function() {
+	$.twilightBark.wrap = function(handler, context) {
+		if (handler === false) return false;
+		if (!$.isFunction(handler)) throw('Can only wrap functions');
+		return function() {
+			try {
+				return handler.apply(context || window, arguments);
+			} catch(e) {
+				_errorHandler(e);
+			}
+		}
+	};
+	
+	$.twilightBark.cleanUp = function() {
 	    window.setTimeout = windowSetTimeout;
 	    window.setInterval = windowSetInterval;
 	    $.fn.bind = jqueryFnBind;
@@ -50,22 +56,10 @@
 	    $.fn.live = jqueryFnLive;
 	};
 	
-	
-	wrapFunction = function(context, handler) {
-		if (handler === false) return false;
-		return function() {
-			try {
-				return handler.apply(context, arguments);
-			} catch(e) {
-				_errorHandler(e);
-			}
-		}
-	};
-	
 	customBinder = function(passThrough) {
 		return function(type, data, fn, origSelector) {
 			handler = ( $.isFunction( data ) || data === false ) ? data : fn;
-			_handler = wrapFunction(this, handler);
+			_handler = $.twilightBark.wrap(handler, this);
 			if (handler === data) {
 				passThrough.call(this, type, _handler, undefined, origSelector);
 			} else {
@@ -75,7 +69,4 @@
 			return this;
 		}
 	};
-
-
-	
 })(jQuery);

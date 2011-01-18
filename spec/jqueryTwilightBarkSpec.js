@@ -1,12 +1,12 @@
 describe("jQueryErrorReporter", function() {
 	var theHandler, theFail;
 	beforeEach(function() {	    
-    	theHandler =jasmine.createSpy();
+    	theHandler = jasmine.createSpy();
     	theFail = function() { throw('Boom!') };
 	});
 	
 	afterEach(function() {
-	    $.cleanUpTwilightBark();
+	    $.twilightBark.cleanUp();
 	});
 	var expectTheHandlerIsCalledWhen = function(callback) {
 		expect(theHandler).not.toHaveBeenCalled();
@@ -21,8 +21,11 @@ describe("jQueryErrorReporter", function() {
 		expect(theHandler).not.toHaveBeenCalled();
 	}
 
-	describe('onReady', function() {
+	describe('overriding $.readyl', function() {
 		it('reports errors that take place on ready', function() {
+		    beforeEach(function() {
+		        $.twilightBark.reportTo(theHandler);
+		    });
 			expectTheHandlerIsCalledWhen(function() {
 				$(document).ready(theFail);
 			});
@@ -31,7 +34,7 @@ describe("jQueryErrorReporter", function() {
 	
 	describe('simple binding events', function() {
 	    beforeEach(function() {
-    		jQuery.reportErrorsTo(theHandler);
+    		$.twilightBark.reportTo(theHandler);
     	});
 		var div;
 		beforeEach(function() {
@@ -278,7 +281,7 @@ describe("jQueryErrorReporter", function() {
 	
 	describe('persistent live/delegate events', function() {
 	    beforeEach(function() {
-    		jQuery.reportErrorsTo(theHandler);
+    		$.twilightBark.reportTo(theHandler);
     	});
     	describe('live/die', function() {
     		var addDiv = function(classString) {
@@ -482,57 +485,57 @@ describe("jQueryErrorReporter", function() {
 	describe('setInterval and setTimeout', function() {
 	    describe('setting the replaceTimers boolean to true', function() {
 	        beforeEach(function() {
-	            jQuery.reportErrorsTo(theHandler, {replaceTimers: true});
-	            spyOn(jQuery, 'setTimeout');
-	            spyOn(jQuery, 'setInterval');
+	            $.twilightBark.reportTo(theHandler, {replaceTimers: true});
+	            spyOn($.twilightBark, 'setTimeout');
+	            spyOn($.twilightBark, 'setInterval');
 	        });
 	        it('overloads the browser defined setTimeout function', function() {
 	            var func = function() {};
 	            window.setTimeout(func, 100, 'param1', 'param2');
-	            expect(jQuery.setTimeout).toHaveBeenCalled();
-	            expect(jQuery.setTimeout.mostRecentCall.args[0]).toEqual(func);
-	            expect(jQuery.setTimeout.mostRecentCall.args[1]).toEqual(100);
-	            expect(jQuery.setTimeout.mostRecentCall.args[2]).toEqual('param1');
-	            expect(jQuery.setTimeout.mostRecentCall.args[3]).toEqual('param2');
+	            expect($.twilightBark.setTimeout).toHaveBeenCalled();
+	            expect($.twilightBark.setTimeout.mostRecentCall.args[0]).toEqual(func);
+	            expect($.twilightBark.setTimeout.mostRecentCall.args[1]).toEqual(100);
+	            expect($.twilightBark.setTimeout.mostRecentCall.args[2]).toEqual('param1');
+	            expect($.twilightBark.setTimeout.mostRecentCall.args[3]).toEqual('param2');
 	        });
 	        it('overloads the browser defined setInterval function', function() {
 	            var func = function() {};
 	            window.setInterval(func, 100, 'param1', 'param2');
-	            expect(jQuery.setInterval).toHaveBeenCalled();
-	            expect(jQuery.setInterval.mostRecentCall.args[0]).toEqual(func);
-	            expect(jQuery.setInterval.mostRecentCall.args[1]).toEqual(100);
-	            expect(jQuery.setInterval.mostRecentCall.args[2]).toEqual('param1');
-	            expect(jQuery.setInterval.mostRecentCall.args[3]).toEqual('param2');	            
+	            expect($.twilightBark.setInterval).toHaveBeenCalled();
+	            expect($.twilightBark.setInterval.mostRecentCall.args[0]).toEqual(func);
+	            expect($.twilightBark.setInterval.mostRecentCall.args[1]).toEqual(100);
+	            expect($.twilightBark.setInterval.mostRecentCall.args[2]).toEqual('param1');
+	            expect($.twilightBark.setInterval.mostRecentCall.args[3]).toEqual('param2');	            
 	        });
 	    });
 	    describe('setting the replaceTimers boolean to false', function() {
 	        beforeEach(function() {
-	            jQuery.reportErrorsTo(theHandler); //false is the default
-	            spyOn(jQuery, 'setTimeout');
-	            spyOn(jQuery, 'setInterval');
+	            $.twilightBark.reportTo(theHandler); //false is the default
+	            spyOn($.twilightBark, 'setTimeout');
+	            spyOn($.twilightBark, 'setInterval');
 	        });
 	        it('does not overload the browser defined setTimeout function', function() {
 	            var func = function() {};
 	            window.setTimeout(func, 100, 'param1', 'param2');
-	            expect(jQuery.setTimeout).not.toHaveBeenCalled();
+	            expect($.twilightBark.setTimeout).not.toHaveBeenCalled();
 	        });
 	        it('does not overload the browser defined setInterval function', function() {
 	            var func = function() {};
 	            window.setInterval(func, 100, 'param1', 'param2');
-	            expect(jQuery.setInterval).not.toHaveBeenCalled();
+	            expect($.twilightBark.setInterval).not.toHaveBeenCalled();
 	        });
 	    });
 	    describe('the custom setTimeout and setInterval implementations', function() {
 	        beforeEach(function() {
 	            jasmine.Clock.useMock()
-	            jQuery.reportErrorsTo(theHandler);
+	            $.twilightBark.reportTo(theHandler);
             });
             afterEach(function() {
                 jasmine.Clock.reset();
             })
             describe('setTimeout', function() {
     	        it('catches errors', function() {
-    	            $.setTimeout(theFail, 100);
+    	            $.twilightBark.setTimeout(theFail, 100);
     	            expectTheHandlerIsNotCalledWhen(function() {
     	                jasmine.Clock.tick(99);
     	            });
@@ -547,7 +550,7 @@ describe("jQueryErrorReporter", function() {
     	            });
     	        });
     	        it('returns the correct timer ID', function() {
-    	            var id = $.setTimeout(theFail, 100);
+    	            var id = $.twilightBark.setTimeout(theFail, 100);
     	            expectTheHandlerIsNotCalledWhen(function() {
     	                jasmine.Clock.tick(99);
     	            });
@@ -557,7 +560,7 @@ describe("jQueryErrorReporter", function() {
     	            });    	            
     	        });
     	        it('does not allow strings to be passed (no eval!)', function() {
-    	            expect(function() {$.setTimeout("execute this code please", 100)}).toThrow("Please only pass functions to setTimeout")
+    	            expect(function() {$.twilightBark.setTimeout("execute this code please", 100)}).toThrow("Please only pass functions to setTimeout")
     	        });
     	        xit('passes all passed arguments and executes the handler in the global (window) context', function() {
     	            //This is working but jasmine doesn't mock out setTimeout correctly
@@ -566,13 +569,13 @@ describe("jQueryErrorReporter", function() {
     	                expect(b).toEqual({more: 'args'});
     	                expect(this).toEqual(window);
     	            }
-    	            $.setTimeout(func, 100, 17, {more: 'args'});
+    	            $.twilightBark.setTimeout(func, 100, 17, {more: 'args'});
     	            jasmine.Clock.tick(100);
     	        });
             });
             describe('setInterval', function() {
     	        it('catches errors', function() {
-    	            $.setInterval(theFail, 100);
+    	            $.twilightBark.setInterval(theFail, 100);
     	            expectTheHandlerIsNotCalledWhen(function() {
     	                jasmine.Clock.tick(99);
     	            });
@@ -587,7 +590,7 @@ describe("jQueryErrorReporter", function() {
     	            });
     	        });
     	        it('returns the correct timer ID', function() {
-    	            var id = $.setInterval(theFail, 100);
+    	            var id = $.twilightBark.setInterval(theFail, 100);
     	            expectTheHandlerIsNotCalledWhen(function() {
     	                jasmine.Clock.tick(99);
     	            });
@@ -597,7 +600,7 @@ describe("jQueryErrorReporter", function() {
     	            });
     	        });
     	        it('does not allow strings to be passed (no eval!)', function() {
-    	            expect(function() {$.setInterval("execute this code please", 100)}).toThrow("Please only pass functions to setInterval")
+    	            expect(function() {$.twilightBark.setInterval("execute this code please", 100)}).toThrow("Please only pass functions to setInterval")
     	        });
     	        xit('passes all passed arguments and executes the handler in the global (window) context', function() {
     	            //This is working but jasmine doesn't mock out setInterval correctly
@@ -606,10 +609,47 @@ describe("jQueryErrorReporter", function() {
     	                expect(b).toEqual({more: 'args'});
     	                expect(this).toEqual(window);
     	            }
-    	            $.setInterval(func, 100, 17, {more: 'args'});
+    	            $.twilightBark.setInterval(func, 100, 17, {more: 'args'});
     	            jasmine.Clock.tick(100);
     	        });
             });
 	    });
 	});
+	describe('Custom function wrapping with $.twilightBark.wrap', function() {
+	    beforeEach(function() {
+    		$.twilightBark.reportTo(theHandler);
+    	});
+	    it('wraps the function and applies the supplied context', function() {
+	        expect(theFail).toThrow('Boom!')
+	        var obj = {};
+	        var func = $.twilightBark.wrap(theFail, obj);
+	        expectTheHandlerIsCalledWhen(func);
+	        var func = $.twilightBark.wrap(function(a, b, c) {
+	            expect(this).toEqual(obj);
+	            expect(a).toEqual(17);
+	            expect(b).toEqual({my: 'data'});
+	            expect(c).toEqual(obj);
+	        }, obj);
+	        func(17, {my: 'data'}, obj);
+	    });
+	    it('accepts a function without an associated context', function() {
+	        expect(theFail).toThrow('Boom!')
+	        var obj = {};
+	        var func = $.twilightBark.wrap(theFail);
+	        expectTheHandlerIsCalledWhen(func);
+	        var func = $.twilightBark.wrap(function(a, b, c) {
+	            expect(this).toEqual(window);
+	            expect(a).toEqual(17);
+	            expect(b).toEqual({my: 'data'});
+	            expect(c).toEqual(obj);
+	        });
+	        func(17, {my: 'data'}, obj);	        
+	    });
+	    it('throws an error if the object being wrapped is not a function', function() {
+	        expect(function() {
+	            $.twilightBark.wrap('not a function')
+	        }).toThrow('Can only wrap functions');
+	    });
+	});
+	
 });
