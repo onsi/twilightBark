@@ -7,7 +7,7 @@
 	}
 */
 (function($) {
-	var _errorHandler = $.noop, _throwErrors = false;
+	var _errorHandler = $.noop, _throwErrors = false, _url = undefined;
 	var customBinder, errorReport;
 	var ready = false;
 	var original = {}, fnFuncs = ['bind', 'one', 'live', 'ready'], windowFuncs = ['setTimeout', 'setInterval'];
@@ -24,6 +24,7 @@
 	    options = options || {};
 		_errorHandler = $.isFunction(options.handler) ? options.handler : $.noop;
 		_throwErrors = (options.throwErrors !== null && options.throwErrors !== undefined) ? options.throwErrors : false;
+		_url = options.url;
 		$.each(['bind', 'one', 'live'], function(i, name) {
 			$.fn[name] = customBinder(original[name]);
 		});
@@ -52,10 +53,15 @@
 		if (handler === false) return false;
 		if (!$.isFunction(handler)) throw('Can only wrap functions');
 		return function() {
+			var report;
 			try {
 				return handler.apply(context || window, arguments);
 			} catch(e) {
-				_errorHandler(e, errorReport(e));
+				report = errorReport(e);
+				_errorHandler(e, report);
+				if (_url) {
+					//how to post?
+				}
 				if (_throwErrors) throw(e);
 			}
 		}
@@ -86,7 +92,7 @@
 	
 	errorReport = function(e) {
 		var ret = {};
-		if (!JSON.stringify) {
+		if (!JSON || !JSON.stringify) {
 			return "Caught exception" + e + ".  Please include a JSON library for comprehensive reports.";
 		}
 		ret.date = new Date();
@@ -98,10 +104,15 @@
 		for (key in navigator) {
 			if (navigator.hasOwnProperty(key) && typeof(navigator[key]) !== typeof({})) ret.navigator[key] = navigator[key];
 		}
-		if (printStackTrace) {
-			ret.stack = printStackTrace({e: e});
+		if (e.stack) {
+			e.exceptionStackTrace = e.stack;
 		} else {
-			ret.stack = 'For a complete stacktrace please include the javascript-stacktrace library.  It can be found at: https://github.com/emwendelin/javascript-stacktrace'
+			e.exceptionStackTrace = "Exception did not include a trace";
+		}
+		if (window.printStackTrace) {
+			ret.printStackTrace = window.printStackTrace({e: e});
+		} else {
+			ret.printStackTrace = 'For a complete stacktrace please include the javascript-stacktrace library.  It can be found at: https://github.com/emwendelin/javascript-stacktrace'
 		}
 		return JSON.stringify(ret);
 	};

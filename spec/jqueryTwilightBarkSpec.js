@@ -691,5 +691,58 @@ describe("jQueryErrorReporter", function() {
 			});
 		});
 	});
+	describe('Error reports', function() {
+		var fail, getReport;
+		getReport = function() {
+			expect(theHandler).toHaveBeenCalled();
+			return JSON.parse(theHandler.mostRecentCall.args[1]);
+		}
+		beforeEach(function() {
+			$.twilightBark.reportErrors({handler: theHandler});
+			fail = $.twilightBark.wrap(function() {throw(Error('Boom!'))});
+		});
+		it('should set the right date', function() {
+			fail();
+			expect(new Date() - new Date(getReport().date)).toBeLessThan(1000); //not the best test in the world... meh
+		});
+		it('should set the right message', function() {
+			fail();
+			expect(getReport().message).toEqual('Error: Boom!');
+		});
+		it('should pass the exception', function() {
+			fail();
+			expect(getReport().exception.message).toEqual('Boom!');
+		});
+		xit('should pass cookies along', function() {
+			document.cookie = "cookie1=yum";
+			document.cookie = "cookie2=num";
+			fail();
+			expect(getReport().cookies).toEqual("cookie1=yum", "cookie2=num");
+		});
+		it('should pass location information along', function() {
+			fail();
+			expect(getReport().location.href).toEqual(window.location.href);
+		});
+		it('should pass the navigator information along', function() {
+			fail();
+			expect(getReport().navigator.appName).toEqual(navigator.appName);
+		});
+		it('should include the exception stack trace', function() {
+			fail();
+			expect(getReport().exceptionStackTrace).not.toBeNull();
+		});
+		describe("printStackTrace", function() {
+			it('should include the printStackTrace stack trace if printStackTrace is installed', function() {
+				window.printStackTrace = function() {return "stack trace"};
+				fail();
+				expect(getReport().printStackTrace).toEqual('stack trace');
+			});
+			it('should include a message printStackTrace is not installedinstalled', function() {
+				window.printStackTrace = undefined;
+				fail();
+				expect(getReport().printStackTrace).toMatch('javascript-stacktrace');
+			});			
+		});
+	});
 	
 });
