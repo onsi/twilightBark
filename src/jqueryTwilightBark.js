@@ -7,34 +7,50 @@
 	}
 */
 (function($) {
-	var _errorHandler = $.noop, _throwErrors = false, _url = undefined;
+	var _errorHandler = $.noop, _throwErrors = false;
 	var customBinder, errorReport;
 	var ready = false;
 	var original = {}, fnFuncs = ['bind', 'one', 'live', 'ready'], windowFuncs = ['setTimeout', 'setInterval'];
+	original.ajax = $.ajax;
 	$(fnFuncs).each(function(i, name) {
 		original[name] = $.fn[name];
 	});
 	$(windowFuncs).each(function(i, name) {
 		original[name] = window[name];
 	});
-	
 	$.twilightBark = {};
-	
+	$.twilightBark._original = original;
 	$.twilightBark.reportErrors = function(options) {
 	    options = options || {};
 		_errorHandler = $.isFunction(options.handler) ? options.handler : $.noop;
 		_throwErrors = (options.throwErrors !== null && options.throwErrors !== undefined) ? options.throwErrors : false;
-		_url = options.url;
 		$.each(['bind', 'one', 'live'], function(i, name) {
-			$.fn[name] = customBinder(original[name]);
+			$.fn[name] = function(type, data, fn, origSelector) {
+				var handler = ( $.isFunction( data ) || data === false ) ? data : fn;
+				var _handler = $.twilightBark.wrap(handler, this);
+				if (handler === data) {
+					original[name].call(this, type, _handler, undefined, origSelector);
+				} else {
+					original[name].call(this, type, data, _handler, origSelector);
+				}
+				if (handler !== false) handler.guid = _handler.guid;
+				return this;
+			}
 		});
 		$.fn.ready = function(handler) {
 			return original.ready.call(this, $.twilightBark.wrap(handler, document));
 		}
+		$.ajax = function(settings) {
+			var s = jQuery.extend(true, {}, settings);
+			$(['beforeSend', 'complete', 'dataFilter', 'error', 'success']).each(function(i, name) {
+				if ($.isFunction(s[name])) s[name] = $.twilightBark.wrap(s[name]);
+			});
+			return original.ajax.call(this, s);
+		}
 		if (options.replaceTimers) {
 			$.each(windowFuncs, function(i, name) {
 				window[name] = function() {
-					$.twilightBark[name].apply(window, arguments)
+					$.twilightBark[name].apply(window, arguments);
 				};
 			});
 		}
@@ -55,13 +71,10 @@
 		return function() {
 			var report;
 			try {
-				return handler.apply(context || window, arguments);
+				return handler.apply(context || this, arguments);
 			} catch(e) {
 				report = errorReport(e);
 				_errorHandler(e, report);
-				if (_url) {
-					//how to post?
-				}
 				if (_throwErrors) throw(e);
 			}
 		}
@@ -74,22 +87,9 @@
 		$.each(fnFuncs, function(i, name) {
 			$.fn[name] = original[name];
 		});
+		$.ajax = original.ajax;
 	};
-	
-	customBinder = function(passThrough) {
-		return function(type, data, fn, origSelector) {
-			var handler = ( $.isFunction( data ) || data === false ) ? data : fn;
-			var _handler = $.twilightBark.wrap(handler, this);
-			if (handler === data) {
-				passThrough.call(this, type, _handler, undefined, origSelector);
-			} else {
-				passThrough.call(this, type, data, _handler, origSelector);
-			}
-			if (handler !== false) handler.guid = _handler.guid;
-			return this;
-		}
-	};
-	
+		
 	errorReport = function(e) {
 		var ret = {};
 		if (!JSON || !JSON.stringify) {
@@ -105,9 +105,9 @@
 			if (navigator.hasOwnProperty(key) && typeof(navigator[key]) !== typeof({})) ret.navigator[key] = navigator[key];
 		}
 		if (e.stack) {
-			e.exceptionStackTrace = e.stack;
+			ret.exceptionStackTrace = e.stack;
 		} else {
-			e.exceptionStackTrace = "Exception did not include a trace";
+			ret.exceptionStackTrace = "Exception did not include a trace";
 		}
 		if (window.printStackTrace) {
 			ret.printStackTrace = window.printStackTrace({e: e});
@@ -116,5 +116,4 @@
 		}
 		return JSON.stringify(ret);
 	};
-	
 })(jQuery);

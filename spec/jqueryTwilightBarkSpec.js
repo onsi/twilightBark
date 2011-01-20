@@ -194,7 +194,7 @@ describe("jQueryErrorReporter", function() {
 					div.unbind(ev, theFail);
 					expectTheHandlerIsNotCalledWhen(function() {
 						div[ev]();
-					});						
+					});
 				});	
 			};
 			describe('catches errors on handlers bound via shortcut functions', function() {
@@ -204,6 +204,28 @@ describe("jQueryErrorReporter", function() {
 				for (i = 0 ; i < ilen ; i += 1) {
 					testHandler(events[i]);
 				}
+			});
+		});
+		describe('ajax shortcut functions', function() {
+			var testHandler = function(ev) {
+				it("handles " + ev, function() {						
+					div[ev](theFail);
+					expectTheHandlerIsCalledWhen(function() {
+						jQuery.event.trigger(ev);
+					});
+					div.unbind(ev, theFail);
+					expectTheHandlerIsNotCalledWhen(function() {
+						jQuery.event.trigger(ev);
+					});
+				});	
+			};
+			describe('catches errors on handlers bound via shortcut functions', function() {
+				var i, ilen, ev;
+				events = ["ajaxStart", "ajaxStop", "ajaxComplete", "ajaxError", "ajaxSuccess", "ajaxSend"];
+				ilen = events.length;
+				for (i = 0 ; i < ilen ; i += 1) {
+					testHandler(events[i]);
+				}				
 			});
 		});
 		describe('one/unbind', function() {
@@ -499,6 +521,26 @@ describe("jQueryErrorReporter", function() {
     				});                        
     			});
     		});
+		});
+	});
+	
+	describe('ajax', function() {
+		beforeEach(function() {
+            $.twilightBark.reportErrors({handler: theHandler});
+			spyOn($.twilightBark._original, 'ajax');
+		});
+		describe('it automatically wraps all ajax callbacks', function() {
+			$(['beforeSend', 'complete', 'dataFilter', 'error', 'success']).each(function(i, name) {
+				it('wraps ' + name, function() {
+					var options = {};
+					options[name] = theFail;
+					$.ajax(options);
+					expect($.twilightBark._original.ajax).toHaveBeenCalled();
+					expectTheHandlerIsCalledWhen(function() {
+						$.twilightBark._original.ajax.mostRecentCall.args[0][name]();
+					});
+				});
+			});
 		});
 	});
 	

@@ -5,10 +5,43 @@
   <title>Jasmine Test Runner</title>
   <script type="text/javascript" src="lib/jquery-1.4.4.js"></script>
   <script type="text/javascript" src="src/jqueryTwilightBark.js"></script>
+  <script type="text/javascript" src="lib/stacktrace.js"></script>
+  <style>
+	#blow-up {
+		padding: 20px;
+		background-color: #eee;
+		width: 200px;
+		cursor: pointer;
+		font-weight: bold;
+		text-align: center;
+		font-family: tahoma;
+	}
+	div.dict {
+		margin-left: 30px;
+	}
+  </style>
 </head>
 <body>
+	<div id="blow-up">Blow Up!</div>
     <script>
-    jQuery.reportErrorsTo(function() {console.log("BARK!"); console.log(arguments);});
+	handler = function(e, report) {
+		report = report.replace(/{/g, "<div class='dict'>");
+		report = report.replace(/}/g, "</div>");
+		report = report.replace(/\[/g, "<div class='array'>");
+		report = report.replace(/\]/g, "</div>");
+		report = report.replace(/\\n/g, "<br>");
+		report = report.replace(/,/g, "<br>");
+		report = report.replace(/\"/g, "");
+
+		$('body').append($('<div>').html(report));
+	}
+    jQuery.twilightBark.reportErrors({handler: handler});
+	$(document).ready(function() {
+		$('#blow-up').click(function() {
+			throw(Error('Kaboom!'));
+		});
+	});
+	
     window.doIt = function() {
         parent = $('<div>', {'class': 'parent'});
         child = $('<div>', {'class': 'clicker'});
