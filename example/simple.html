@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>Twilight Bark</title>
+  <script type="text/javascript" src="../lib/jquery-1.4.4.js"></script>a
+  <script type="text/javascript" src="../src/jqueryTwilightBark.js"></script>
+  <script type="text/javascript" src="../lib/stacktrace.js"></script>
+  <style>
+	#blow-up {
+		padding: 20px;
+		background-color: #eee;
+		width: 200px;
+		cursor: pointer;
+		font-weight: bold;
+		text-align: center;
+		font-family: tahoma;
+	}
+	div.dict {
+		margin-left: 30px;
+	}
+  </style>
+</head>
+<body>
+	<div id="blow-up">Blow Up!</div>
+    <script>
+    
+    /* The Error Handler, idealy this would make a GET or POST request to send the report to a server */
+	handler = function(e, report) {
+        //This is a contrived bit of code to dump a human readable version of the error report onto the DOM
+        //Note that it is assumed that JSON support is provided by the browser.  If not a JSON library will need to be used.
+        report = report.replace(/{/g, "<div class='dict'>").replace(/}/g, "</div>").replace(/\[/g, "<div class='array'>").replace(/\]/g, "</div>").replace(/\\n/g, "<br>").replace(/,/g, "<br>").replace(/\"/g, "");
+        $('body').append($('<div>').html(report));
+	}
+	/*
+	    Tell twilightBark to start reporting errors
+	*/
+    $.twilightBark.reportErrors({handler: handler});
+    
+    // All commands (including $(document).ready and event bindings) after this point automatically wrap callbacks in Twilight Bark's error handling code
+    
+	$(document).ready(function() {
+		$('#blow-up').click(function() {
+			throw(Error('Kaboom!'));
+		});
+	});
+    </script>
+</body>
+</html>
