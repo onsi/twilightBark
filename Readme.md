@@ -3,6 +3,7 @@ Twilight Bark is a simple little jQuery plugin that provides exception reporting
 
 # Requirements #
 Twilight Bark requires:
+
 - jQuery 1.4.4 (haven't tested jQuery 1.5 yet!)
 - A JSON library to generate complete error reports
 - The javascript-stacktrace library (available [https://github.com/emwendelin/javascript-stacktrace](here), but also provided in the lib directory)
