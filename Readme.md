@@ -1,5 +1,4 @@
 # Twilight Bark, a jQuery plugin #
-
 Twilight Bark is a simple little jQuery plugin that provides exception reporting.  In most cases all you need to do is include Twilight Bark and initialize it with an error handling callback before any calls to $(document).ready().  Your handler will be called and passed a comprehensive(ish) error report whenever an exception takes place.  You can then post this error to a server and provide your users with feedback.
 
 # Requirements #
