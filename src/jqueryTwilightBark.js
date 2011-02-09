@@ -18,8 +18,11 @@
 	$(windowFuncs).each(function(i, name) {
 		original[name] = window[name];
 	});
+	
 	$.twilightBark = {};
+	
 	$.twilightBark._original = original;
+	
 	$.twilightBark.reportErrors = function(options) {
 	    options = options || {};
 		_errorHandler = $.isFunction(options.handler) ? options.handler : $.noop;
@@ -37,16 +40,19 @@
 				return this;
 			}
 		});
+		
 		$.fn.ready = function(handler) {
 			return original.ready.call(this, $.twilightBark.wrap(handler, document));
-		}
+		};
+		
 		$.ajax = function(settings) {
 			var s = jQuery.extend(true, {}, settings);
 			$(['beforeSend', 'complete', 'dataFilter', 'error', 'success']).each(function(i, name) {
 				if ($.isFunction(s[name])) s[name] = $.twilightBark.wrap(s[name]);
 			});
 			return original.ajax.call(this, s);
-		}
+		};
+		
 		if (options.replaceTimers) {
 			$.each(windowFuncs, function(i, name) {
 				window[name] = function() {
