@@ -17,16 +17,16 @@ Twilight Bark requires:
 
 Here's an example:
 
-<script type="text/javascript">
-    var handler = function(e, report) {
-        $.post("http://my.server.com/handleJSError", {report: report});
-        alert('An error occurred! Whoops!');
-    }
-    $.twilightBark.reportTo({handler: handler});
-    $(document).ready(
-        //Your code here
-    );
-</script>
+    <script type="text/javascript">
+        var handler = function(e, report) {
+            $.post("http://my.server.com/handleJSError", {report: report});
+            alert('An error occurred! Whoops!');
+        }
+        $.twilightBark.reportTo({handler: handler});
+        $(document).ready(
+            //Your code here
+        );
+    </script>
 
 
 ## Initialization Options ##
