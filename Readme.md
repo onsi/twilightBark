@@ -2,6 +2,12 @@
 
 Twilight Bark is a simple little jQuery plugin that provides exception reporting.  In most cases all you need to do is include Twilight Bark and initialize it with an error handling callback before any calls to $(document).ready().  Your handler will be called and passed a comprehensive(ish) error report whenever an exception takes place.  You can then post this error to a server and provide your users with feedback.
 
+# Requirements #
+Twilight Bark requires:
+- jQuery 1.4.4 (haven't tested jQuery 1.5 yet!)
+- A JSON library to generate complete error reports
+- The javascript-stacktrace library (available [https://github.com/emwendelin/javascript-stacktrace](here), but also provided in the lib directory)
+
 # Usage & Options #
 
 ## Getting Started ##
@@ -40,7 +46,7 @@ Call this function once just before your first `$(document).ready()` The options
 
 ## `$.twilightBark.wrap(functionToWrap, context)` ##
 
-Functions called via `$(document).ready()` and any jQuery's event bindings and/or AJAX callbacks are automatically wrapped with twilightBark's error handling code.  If you have any callbacks defined outside of these scopes you may need to wrap them with `$.twilightBark.wrap` first.
+Functions called via `$(document).ready()` and any jQuery's event bindings and/or AJAX callbacks are automatically wrapped with Twilight Bark's error handling code.  If you have any callbacks defined outside of these scopes you may need to wrap them with `$.twilightBark.wrap` first.
 
 `$.twilightBark.wrap` takes two arguments:
 - `functionToWrap`: is required and expected to be a JavaScript function.
@@ -50,7 +56,7 @@ Functions called via `$(document).ready()` and any jQuery's event bindings and/o
 
 ## `$.twilightBark.setTimeout` and `$.twilightBark.setInterval` ##
 
-If you do not set `replaceTimers` to `true` when you call `$.twighlightBark.reportTo` you will need to use twighlightBark's internal versions of setTimeout and setInterval when setting timers.  These have the same signature as the timer functions provided by the browser.
+If you do not set `replaceTimers` to `true` when you call `$.twilightBark.reportTo` you will need to use Twilight Bark's internal versions of setTimeout and setInterval when setting timers.  These have the same signature as the timer functions provided by the browser.
 
 ## `$.twilightBark.cleanup` ##
 
